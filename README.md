@@ -114,3 +114,6 @@ class Admin(admin.ModelAdmin):
 admin.site.register(remote_model.model, Admin)
 
 ```
+
+## TO DO
+- Add a migration command to add and remove the permission automatically 
