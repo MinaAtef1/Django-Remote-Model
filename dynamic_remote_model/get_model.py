@@ -9,7 +9,7 @@ from django.apps import apps
 import inspect
 
 
-class DynamicModel():
+class DynamicRemote():
     @staticmethod
     def make_query_request( method_type, url, payload, headers):
         method = getattr(requests, method_type)
@@ -42,7 +42,7 @@ class DynamicModel():
                
 
             def get(self, *args, **kwargs):
-                data,status = DynamicModel.make_query_request('get', f"{model_base_url}{kwargs['id']}/", {'id': kwargs['id']}, headers)
+                data,status = DynamicRemote.make_query_request('get', f"{model_base_url}{kwargs['id']}/", {'id': kwargs['id']}, headers)
                 if status != 200:
                     return None
                 return self.__dict_to_model(data)
@@ -54,7 +54,7 @@ class DynamicModel():
 
             def _fetch_all(self):
                 qs = model.objects.none()
-                data, status = DynamicModel.make_query_request('get', model_base_url,{}, headers)
+                data, status = DynamicRemote.make_query_request('get', model_base_url,{}, headers)
                 models = [self.__dict_to_model(row) for row in data]
                 qs._iterable_class = self.__iterable_factory(models)
                 return qs
@@ -95,7 +95,7 @@ class DynamicModel():
         response = requests.get(self.provider_dict_api_url, headers=self.headers)
         model_data = response.json()
         model_fields = {
-            field['name']: DynamicModel.get_field(**field) for field in model_data
+            field['name']: DynamicRemote.get_field(**field) for field in model_data
         }
         model_fields['__module__'] = f'{self.app_name}.models.{self.model_name}'
         
@@ -127,18 +127,18 @@ class DynamicModel():
             id = getattr(self, 'id', None)
             model_data = {field.name: getattr(self, field.name) for field in self._meta.fields if field.name not in ['id','_state']}
             if id is None:
-                DynamicModel.make_query_request('post', f"{model_base_url}", model_data, headers)
+                DynamicRemote.make_query_request('post', f"{model_base_url}", model_data, headers)
             else:
-                DynamicModel.make_query_request('put', f"{model_base_url}{id}/", model_data, headers)
+                DynamicRemote.make_query_request('put', f"{model_base_url}{id}/", model_data, headers)
 
         def delete(self, *args, **kwargs):
             id = getattr(self, 'id', None)
             if id is not None:
-                DynamicModel.make_query_request('delete', f"{model_base_url}{id}/", {} ,headers)
+                DynamicRemote.make_query_request('delete', f"{model_base_url}{id}/", {} ,headers)
             
 
         if shallow:
-            attrs = DynamicModel.get_shallow_model_fields()
+            attrs = DynamicRemote.get_shallow_model_fields()
             model_for_manger = type(model_name, (models.Model,), attrs)
             self.model = model_for_manger
             return self
