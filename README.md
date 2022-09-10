@@ -50,11 +50,14 @@ remote_model = RemoteModel('<model_name>',<provider_url>,<view_set_url>,'Remote-
 Those are the tested query methods
 ``` py 
 remote_model.model.objects.all()
-remote_model.model.get()
-remote_model.model.filter()
-remote_model.model.order_by()
-remote_model.model.distinct()
-remote_model.model.count()
+remote_model.model.objects.get()
+remote_model.model.objects.filter()
+remote_model.model.objects.order_by()
+remote_model.model.objects.distinct()
+remote_model.model.objects.count()
+remote_model.model.save()
+remote_model.model.delete()
+
 ```
 It's better to have only one remote_model instance per api and to import it wherever you want ti 
 

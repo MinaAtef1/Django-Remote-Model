@@ -4,3 +4,5 @@ venv
 *.iml
 .idea
 django_remote_model.egg-info/*
+build/*
+dist/*

@@ -4,7 +4,7 @@ from glob import glob
 
 setup(
     name='django_remote_model',
-    version='0.1.5',
+    version='0.1.6',
     license='MIT',
     author="Mina Atef",
     author_email='mina.atef0@gmail.com',
