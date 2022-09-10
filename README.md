@@ -9,6 +9,7 @@ The script uses Django REST framework. You can install it by following this [tut
 ## Installation
 ``` bash
 pip install django_remote_model
+pip install django-filter
 ```
 
 ## Usage
