@@ -1,7 +1,7 @@
 [project]
 name = "django-remote-model"
 description = "Django Remote Model"
-version = "0.1.2"
+version = "0.1.5"
 authors = [
     { name = "Mina Atef", email = "mina.atef0@gmail.com" }
 ]

@@ -43,11 +43,18 @@ urlpatterns =[
 Now that we half the apis ready, it's the consumer turn to connect to it
 
 ``` python 
-remote_model = DynamicRemote('<model_name>',<provider_url>,<view_set_url>,'Remote-Model-Api-Key', 'KEY_Value')
+from django_remote_model.remote_model import RemoteModel
+
+remote_model = RemoteModel('<model_name>',<provider_url>,<view_set_url>,'Remote-Model-Api-Key', 'KEY_Value')
 ```
-Now if you want to access the model 
+Those are the tested query methods
 ``` py 
 remote_model.model.objects.all()
+remote_model.model.get()
+remote_model.model.filter()
+remote_model.model.order_by()
+remote_model.model.distinct()
+remote_model.model.count()
 ```
 It's better to have only one remote_model instance per api and to import it wherever you want ti 
 
