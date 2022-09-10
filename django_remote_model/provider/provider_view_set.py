@@ -14,14 +14,12 @@ from .provider_fields_generator import dynamic_model_dict_generator
 from rest_framework.permissions import BasePermission
 
 
-def ProviderViewGenerator(model, api_key, api_key_name):
-
+def ProviderViewGenerator(model,  api_key_name, api_key):
 
     class Check_API_KEY_Auth(BasePermission):
         def has_permission(self, request, view):
             # API_KEY should be in request headers to authenticate requests
             api_key_secret = request.headers.get(api_key_name)
-            print(api_key_secret)
             return api_key == api_key_secret
 
     fields = dynamic_model_dict_generator(model)
@@ -31,14 +29,14 @@ def ProviderViewGenerator(model, api_key, api_key_name):
         permission_classes = [Check_API_KEY_Auth]
 
         def get(self, request):
-            
-            serializer = dynamic_model_dict_serializer(fields,many=True)
+
+            serializer = dynamic_model_dict_serializer(fields, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
     return ProviderView.as_view()
 
 
-def model_viewSet_generator(model,api_key, api_key_name):
+def ModelViewSetGenerator(model, api_key_name, api_key):
 
     class Check_API_KEY_Auth(BasePermission):
         def has_permission(self, request, view):
@@ -50,6 +48,5 @@ def model_viewSet_generator(model,api_key, api_key_name):
         serializer_class = provider_model_generator(model)
         permission_classes = [Check_API_KEY_Auth]
         queryset = model.objects.all()
-
 
     return model_viewSet

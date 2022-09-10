@@ -11,17 +11,17 @@ import inspect
 
 class DynamicRemote():
     @staticmethod
-    def make_query_request( method_type, url, payload, headers):
+    def make_query_request( method_type, url, payload, api_name, api_key):
         method = getattr(requests, method_type)
 
-        response = method(url, json=payload, headers=headers)
+        response = method(url, json=payload, headers={api_name: api_key})
         try:
             return response.json(), response.status_code
         except Exception as e:
             return response.text, response.status_code
 
 
-    def queryset_factory(dynamic_instance, model,provider_dict_api_url, model_base_url, headers=None):
+    def queryset_factory(dynamic_instance, model,provider_dict_api_url, model_base_url, api_name, api_key):
 
         class model_query_set(QuerySet):
 
@@ -42,7 +42,7 @@ class DynamicRemote():
                
 
             def get(self, *args, **kwargs):
-                data,status = DynamicRemote.make_query_request('get', f"{model_base_url}{kwargs['id']}/", {'id': kwargs['id']}, headers)
+                data,status = DynamicRemote.make_query_request('get', f"{model_base_url}{kwargs['id']}/", {'id': kwargs['id']}, dynamic_instance.api_name, dynamic_instance.api_key)
                 if status != 200:
                     return None
                 return self.__dict_to_model(data)
@@ -54,7 +54,7 @@ class DynamicRemote():
 
             def _fetch_all(self):
                 qs = model.objects.none()
-                data, status = DynamicRemote.make_query_request('get', model_base_url,{}, headers)
+                data, status = DynamicRemote.make_query_request('get', model_base_url,{}, dynamic_instance.api_name, dynamic_instance.api_key)
                 models = [self.__dict_to_model(row) for row in data]
                 qs._iterable_class = self.__iterable_factory(models)
                 return qs
@@ -80,7 +80,7 @@ class DynamicRemote():
         class model_manager(models.Manager):
 
             def get_queryset(self):
-                return dynamic_instance.queryset_factory(model,dynamic_instance.provider_dict_api_url, dynamic_instance.model_base_url, dynamic_instance.headers)
+                return dynamic_instance.queryset_factory(model,dynamic_instance.provider_dict_api_url, dynamic_instance.model_base_url, dynamic_instance.api_name, dynamic_instance.api_key)
 
         return model_manager()
 
@@ -91,8 +91,8 @@ class DynamicRemote():
         return type(**kwargs)
 
 
-    def get_model_fields(self ):
-        response = requests.get(self.provider_dict_api_url, headers=self.headers)
+    def get_model_fields(self):
+        response = requests.get(self.provider_dict_api_url, headers={self.api_name: self.api_key})
         model_data = response.json()
         model_fields = {
             field['name']: DynamicRemote.get_field(**field) for field in model_data
@@ -111,52 +111,56 @@ class DynamicRemote():
     def __get_app_name(self):
         stack_trace = inspect.stack()
         file_path = stack_trace[1].filename
-        module = inspect.getmodule(inspect.stack()[1][0])
+        module = inspect.getmodule(inspect.stack()[2][0])
         return apps.get_containing_app_config(module.__name__).name
     
-    def __new__(cls, model_name, provider_dict_api_url, model_base_url, headers, app_name=None, shallow=False):
-        self = super().__new__(cls)
+    def __init__(self, model_name, provider_dict_api_url, model_base_url, api_name, api_key, app_name=None, shallow=False):
         self.model_name = model_name
         self.provider_dict_api_url = provider_dict_api_url
         self.model_base_url = model_base_url
-        self.headers = headers
+        self.api_name = api_name
+        self.api_key = api_key
         self.shallow = shallow
         self.app_name = app_name or self.__get_app_name()
+
+
+    def generate_model(dyanmic_instance):
 
         def save(self, *args, **kwargs):
             id = getattr(self, 'id', None)
             model_data = {field.name: getattr(self, field.name) for field in self._meta.fields if field.name not in ['id','_state']}
             if id is None:
-                DynamicRemote.make_query_request('post', f"{model_base_url}", model_data, headers)
+                DynamicRemote.make_query_request('post', f"{dyanmic_instance.model_base_url}", model_data, dyanmic_instance.api_name, dyanmic_instance.api_key)
             else:
-                DynamicRemote.make_query_request('put', f"{model_base_url}{id}/", model_data, headers)
+                DynamicRemote.make_query_request('put', f"{dyanmic_instance.model_base_url}{id}/", model_data, dyanmic_instance.api_name, dyanmic_instance.api_key)
 
         def delete(self, *args, **kwargs):
             id = getattr(self, 'id', None)
             if id is not None:
-                DynamicRemote.make_query_request('delete', f"{model_base_url}{id}/", {} ,headers)
+                DynamicRemote.make_query_request('delete', f"{dyanmic_instance.model_base_url}{id}/", {} , dyanmic_instance.api_name, dyanmic_instance.api_key)
             
-
-        if shallow:
-            attrs = DynamicRemote.get_shallow_model_fields()
-            model_for_manger = type(model_name, (models.Model,), attrs)
-            self.model = model_for_manger
-            return self
-
-        attrs = self.get_model_fields()
-        model_for_manger = type(model_name, (models.Model,), attrs)
+            
+        attrs = dyanmic_instance.get_model_fields()
+        model_for_manger = type(dyanmic_instance.model_name, (models.Model,), attrs)
         model_for_manger.save = save
         model_for_manger.delete = delete
-        manger = self.get_model_manager(model_for_manger)
+        manger = dyanmic_instance.get_model_manager(model_for_manger)
 
-        attrs1 = self.get_model_fields()
+        attrs1 = dyanmic_instance.get_model_fields()
         attrs1['objects'] = manger
-        model = type(model_name, (models.Model,), attrs1)    
+        model = type(dyanmic_instance.model_name, (models.Model,), attrs1)    
         model.save = save 
         model.delete = delete
-        self.model = model
-        return self
+        dyanmic_instance.model = model
+        return dyanmic_instance
 
+
+    def __getattr__(self, name):
+        if name == 'model':
+            self.generate_model()
+            return self.model
+        else:
+            raise AttributeError(f'{name} is not defined')
+            
     def update(self):
-        print(apps.get_containing_app_config(__name__))
-        self.model = self.__new__(self.__class__, self.model_name, self.provider_dict_api_url, self.model_base_url, self.headers, app_name=self.app_name).model
+        self.model = self.generate_model().model

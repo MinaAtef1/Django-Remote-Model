@@ -15,6 +15,15 @@ class dynamic_model_dict_serializer(serializers.Serializer):
     primary_key = serializers.BooleanField()
     max_length = serializers.IntegerField()
 
+    def to_representation(self, obj):
+        ret = super(dynamic_model_dict_serializer, self).to_representation(obj)
+
+        # remove 'url' field if mobile request
+        if ret['type'] == 'FileField':
+            ret.pop('primary_key')
+
+        return ret 
+
 
 def provider_model_generator(model_class):
     class serializer(serializers.ModelSerializer):
