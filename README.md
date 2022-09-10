@@ -1,0 +1,1 @@
+# Django-Dynamic-model
