@@ -3,3 +3,4 @@ venv
 *.xml
 *.iml
 .idea
+django_remote_model.egg-info/*

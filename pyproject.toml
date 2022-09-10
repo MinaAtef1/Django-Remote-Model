@@ -1,0 +1,19 @@
+[project]
+name = "django-remote-model"
+description = "Django Remote Model"
+version = "0.1"
+authors = [
+    { name = "Mina Atef", email = "mina.atef0@gmail.com" }
+]
+dependencies = [
+]
+
+[project.optional-dependencies]
+dev = [
+]
+
+[build-system]
+build-backend = "flit_core.buildapi"
+requires = ["flit_core >=3.2,<4"]
+
+
