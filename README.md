@@ -2,6 +2,9 @@
 
 This package is used to connect two independent django projects together via rest apis while providing the same interface that a normal django model class will have.
 
+This package is written to support to support one admin across multiple apps, but it can be used in many other ways
+
+
 ## Dependencies
 
 The script uses Django REST framework. You can install it by following this [tutorial](https://www.django-rest-framework.org/#installation)
@@ -85,7 +88,7 @@ The `remote_model` instance will update the model inside of it if any update hap
 
 By default the remote model does not have permission of its own because it's not generated from a migration, but you can create a migration for it by setting `has_permission` to `True`
 
-but bear in mind that you will need to delete those permission by hand if you decided to change or remote the remote model
+but bear in mind that you will need to delete those permission by hand if you decided to change or remove the remote model
 
 ## Usage with the Django Admin
 
@@ -96,4 +99,18 @@ from django.contrib import admin
 from .models import remote_model
 
 admin.site.register(remote_model.model)
+```
+
+### Advanced Admin usage
+Keep in mind that the remote model is changing so to decrease the maintenance as possible it's preferred to keep every thing as dynamic as possible
+
+```python
+class Admin(admin.ModelAdmin):
+    # using list filter
+    list_filter = ('column1','column1')
+    # list_display using list field from the model itself
+    list_display = [field.name for field in remote_model.model._meta.fields if field.name not in ['_state', '_meta']]
+    
+admin.site.register(remote_model.model, Admin)
+
 ```
