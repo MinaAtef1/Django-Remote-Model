@@ -54,7 +54,7 @@ Now that we half the apis ready, it's the consumer turn to connect to it, first 
 
 ```python
 from django_remote_model.remote_model import RemoteModel
-remote_model = RemoteModel(model_name, provider_url,view_set_url, Remote_Model_Api_Key, KEY_Value, has_permission=false)
+remote_model = RemoteModel(model_name, provider_url,view_set_url, api_key_header_name, api_key, has_permission=false)
 ```
 Explanation for the arguments:
 Argument | Function 
@@ -62,8 +62,8 @@ Argument | Function
 model_name | The name of the model 
 provider_url | The url for the `ProviderViewGenerator`
 view_set_url | The url for the `ModelViewSetGenerator`
-Remote_Model_Api_Key | The api Key
-KEY_Value | The Key
+api_key_header_name | The api Key
+api_key | The Key
 has_permission | default `False`, Whether the model has permissions or not (useful when using the admin) 
 
 

@@ -13,19 +13,19 @@ from django.contrib.contenttypes.models import ContentType
 
 class RemoteModel(RemoteModelQuerySet):
 
-    def __init__(self, model_name, provider_dict_api_url, model_base_url, api_name, api_key, app_name=None, has_permission=False):
+    def __init__(self, model_name, provider_dict_api_url, model_base_url, api_key_header_name, api_key, app_name=None, has_permission=False):
         self.model_name = model_name
         self.provider_dict_api_url = provider_dict_api_url
         self.model_base_url = model_base_url
-        self.api_name = api_name
+        self.api_key_header_name = api_key_header_name
         self.api_key = api_key
         self.app_name = app_name or self.__get_app_name()
         self.has_permission = has_permission
 
-    def make_query_request(self, method_type, url, api_name, api_key, payload=None, params=None):
+    def make_query_request(self, method_type, url, api_key_header_name, api_key, payload=None, params=None):
         method = getattr(requests, method_type)
 
-        response = method(url, json=payload, params=params, headers={api_name: api_key})
+        response = method(url, json=payload, params=params, headers={api_key_header_name: api_key})
         try:
             return response.json(), response.status_code
         except Exception as e:
@@ -36,7 +36,7 @@ class RemoteModel(RemoteModelQuerySet):
         class model_manager(models.Manager):
 
             def get_queryset(self):
-                return dynamic_instance.queryset_factory(model, dynamic_instance.provider_dict_api_url, dynamic_instance.model_base_url, dynamic_instance.api_name, dynamic_instance.api_key)
+                return dynamic_instance.queryset_factory(model, dynamic_instance.provider_dict_api_url, dynamic_instance.model_base_url, dynamic_instance.api_key_header_name, dynamic_instance.api_key)
 
         return model_manager()
 
@@ -46,7 +46,7 @@ class RemoteModel(RemoteModelQuerySet):
         return type(**kwargs)
 
     def get_model_fields(self):
-        response = requests.get(self.provider_dict_api_url, headers={self.api_name: self.api_key})
+        response = requests.get(self.provider_dict_api_url, headers={self.api_key_header_name: self.api_key})
         model_data = response.json()
         model_fields = {
             field['name']: RemoteModel.get_field(**field) for field in model_data
@@ -68,16 +68,16 @@ class RemoteModel(RemoteModelQuerySet):
             model_data = {field.name: getattr(self, field.name) for field in self._meta.fields if field.name not in ['id', '_state']}
             if id is None:
                 self.make_query_request('post', f"{dyanmic_instance.model_base_url}",
-                                        dyanmic_instance.api_name, dyanmic_instance.api_key, payload=model_data)
+                                        dyanmic_instance.api_key_header_name, dyanmic_instance.api_key, payload=model_data)
             else:
                 self.make_query_request('put', f"{dyanmic_instance.model_base_url}{id}/",
-                                        dyanmic_instance.api_name, dyanmic_instance.api_key, payload=model_data)
+                                        dyanmic_instance.api_key_header_name, dyanmic_instance.api_key, payload=model_data)
 
         def delete(self, *args, **kwargs):
             id = getattr(self, 'id', None)
             if id is not None:
                 self.make_query_request('delete', f"{dyanmic_instance.model_base_url}{id}/",
-                                        dyanmic_instance.api_name, dyanmic_instance.api_key)
+                                        dyanmic_instance.api_key_header_name, dyanmic_instance.api_key)
 
         attrs = dyanmic_instance.get_model_fields()
         model_for_manger = type(dyanmic_instance.model_name, (models.Model,), attrs)
